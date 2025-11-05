@@ -1,0 +1,76 @@
+# CPU-Only Training Container for BDD100k (macOS Compatible)
+# This Dockerfile works on macOS without GPU requirements
+
+FROM python:3.10-slim
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    wget \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create working directory
+WORKDIR /workspace
+
+# Copy requirements
+COPY requirements.txt .
+
+# Install Python dependencies (CPU-only PyTorch)
+RUN pip3 install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu && \
+    pip3 install --no-cache-dir -r requirements.txt
+
+# Copy model code
+COPY src/ ./src/
+COPY configs/ ./configs/
+COPY docs/ ./docs/
+COPY README.md TRAINING_SETUP_GUIDE.md ./
+
+# Create output directories
+RUN mkdir -p /workspace/outputs/training_logs \
+             /workspace/outputs/inference_samples \
+             /workspace/weights
+
+# Expose TensorBoard port
+EXPOSE 6006
+
+# Set Python path
+ENV PYTHONPATH=/workspace:$PYTHONPATH
+
+# Default command
+CMD ["python3", "src/train.py", "--help"]
+
+# Usage Examples:
+# ================
+#
+# Build the image:
+#   docker build -f Dockerfile.cpu -t bdd100k-training-cpu .
+#
+# Test data loader:
+#   docker run -v /Users/ayushsoral/Desktop/code/anusha_assmt/assignment_data_bdd/data_analysis/data:/data \
+#              bdd100k-training-cpu python3 src/data_loader.py
+#
+# Run 1-epoch demo training:
+#   docker run -v /Users/ayushsoral/Desktop/code/anusha_assmt/assignment_data_bdd/data_analysis/data:/data \
+#              -v $(pwd)/outputs:/workspace/outputs \
+#              bdd100k-training-cpu \
+#              python3 src/train.py --model yolov8m.pt --epochs 1 --batch 4 --subset 100 --device cpu
+#
+# Run inference:
+#   docker run -v /Users/ayushsoral/Desktop/code/anusha_assmt/assignment_data_bdd/data_analysis/data:/data \
+#              -v $(pwd)/outputs:/workspace/outputs \
+#              bdd100k-training-cpu \
+#              python3 src/inference.py --model yolov8m.pt --num-samples 10
+#
+# TensorBoard (in another terminal):
+#   docker run -p 6006:6006 -v $(pwd)/outputs:/workspace/outputs \
+#              bdd100k-training-cpu \
+#              tensorboard --logdir /workspace/outputs/training_logs --host 0.0.0.0
