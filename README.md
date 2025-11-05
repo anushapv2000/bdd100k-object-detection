@@ -1,1 +1,0 @@
-# bdd100k-object-detection
