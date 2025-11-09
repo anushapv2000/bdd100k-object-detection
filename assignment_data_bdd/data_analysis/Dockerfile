@@ -11,12 +11,12 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application
-COPY . .
+COPY *.py .
 
-# Expose port for Dash app
-EXPOSE 8050
+# Expose port for Streamlit app
+EXPOSE 8501
 
 ENV PYTHONUNBUFFERED=1
 
-# Start your Dash application
-CMD ["python", "dashboard.py"]
+# Start Streamlit application
+CMD ["streamlit", "run", "streamlit_dashboard.py", "--server.port=8501", "--server.address=0.0.0.0"]
