@@ -318,6 +318,19 @@ def main():
             val_obj_per_img,
         ) = load_and_analyze_data()
 
+    # Save matplotlib visualizations to docs folder (ADD THIS SECTION)
+    if not (DOCS_DIR / 'class_distribution_chart.png').exists():
+        with st.spinner("Generating documentation images..."):
+            success = save_matplotlib_visualizations(
+                train_labels, val_labels, train_class_counts, val_class_counts
+            )
+            if success:
+                st.success(f"✓ Documentation images saved to '{DOCS_DIR}/' folder")
+                # Show list of generated files
+                st.info("Generated files:")
+                for img_file in sorted(DOCS_DIR.glob('*.png')):
+                    st.text(f"  ✓ {img_file.name}")
+
     # Generate sample visualizations if needed
     output_dir = "output_samples"
     if not os.path.exists(output_dir):
